@@ -18,6 +18,7 @@ public class Environment extends SimStateSweep implements Steppable
 	public int maxPopulation = 25000; 
 	
 	//reproduction variables
+	public double initialCoalitionFrequency = 0.01; //frequency of coalition gene in adult males at simulation start
 	public double mutationRate = 0.01; //rate of mutations in cooperative genotype
 	public double migrationMortalityRate = 0.30; //30% chance a male will die when leaving their natal group
 	
@@ -46,6 +47,14 @@ public class Environment extends SimStateSweep implements Steppable
 
 	public void setMutationRate(double mutationRate) {
 		this.mutationRate = mutationRate;
+	}
+
+	public double getInitialCoalitionFrequency() {
+		return initialCoalitionFrequency;
+	}
+
+	public void setInitialCoalitionFrequency(double initialCoalitionFrequency) {
+		this.initialCoalitionFrequency = initialCoalitionFrequency;
 	}
 
 	public double getAverageAge() {
@@ -100,9 +109,25 @@ public class Environment extends SimStateSweep implements Steppable
 		
 		for(int i = 0; i < groups; i++) //for each group
 		{
+			int remaining = n - totalAgentsAssigned;
+			if(remaining <= 0)
+			{
+				break;
+			}
+
 			int x = random.nextInt(gridWidth); //give group random x coordinate
 			int y = random.nextInt(gridHeight); //give group random y coordinate
-			int groupSize = random.nextInt(maxGroupSize - minGroupSize + 1) + minGroupSize; //generates groups between minimum and maximum group size
+			int maxAllowedGroupSize = Math.min(maxGroupSize, remaining);
+			int minAllowedGroupSize = Math.min(minGroupSize, maxAllowedGroupSize);
+			int groupSize;
+			if(minAllowedGroupSize == maxAllowedGroupSize)
+			{
+				groupSize = maxAllowedGroupSize;
+			}
+			else
+			{
+				groupSize = random.nextInt(maxAllowedGroupSize - minAllowedGroupSize + 1) + minAllowedGroupSize; //generates groups between minimum and maximum group size
+			}
 			Bag g = new Bag(groupSize); //create bag called g with capacity equal to groupSize
 			
 			
@@ -130,7 +155,7 @@ public class Environment extends SimStateSweep implements Steppable
 				Baboon b = new Baboon(this, isMale, x, y, ageInDays, isJuvenile); //create a new baboon for each baboon in the group
 				if(b.isMale())
 				{
-					b.initializeGenotype(mutationRate, random); //initialize cooperation gene in starting males
+					b.initializeGenotype(initialCoalitionFrequency, random); //initialize coalition gene in starting males
 					
 					if(isJuvenile && !adultFemales.isEmpty())
 					{
@@ -433,6 +458,8 @@ public class Environment extends SimStateSweep implements Steppable
 	public void start()
 	{
 		super.start();
+		deadMales.clear();
+		Baboon.resetRunState();
 		spaces = Spaces.SPARSE; //set the space
 		make2DSpace(spaces, gridWidth, gridHeight);//make the space
 		makeGroups(); //create the groups

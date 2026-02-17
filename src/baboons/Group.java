@@ -702,7 +702,7 @@ public class Group implements Steppable
 	    {
 	        Baboon j = (Baboon) juveniles.objs[i];
 
-	        // Mother’s destination group if available (after adults have been moved)
+	        // Mother's destination group if available (after adults have been moved)
 	        Group motherGroup = (j.mother != null) ? j.mother.group : null;
 
 	        // Choose target: follow mom if possible; otherwise random split

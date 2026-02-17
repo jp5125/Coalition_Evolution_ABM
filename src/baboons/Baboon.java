@@ -98,7 +98,10 @@ public class Baboon implements Steppable
 		if(isMale() && !isJuvenile)
 		{
 			state.deadMales.add(this); //track dead adult males for probe
-			state.experimenter.maleOffspringByStrategy(this);
+			if(state.experimenter != null)
+			{
+				state.experimenter.maleOffspringByStrategy(this);
+			}
 		}
 		
 		if(group != null && group.members != null)
@@ -141,6 +144,13 @@ public class Baboon implements Steppable
 
 	public void setGroup(Group group) {
 		this.group = group;
+	}
+
+	public static void resetRunState()
+	{
+		nextID = 0;
+		infantDied = 0;
+		infantSurvived = 0;
 	}
 	
 	// --- Reproduction Methods for Female Baboons ---
