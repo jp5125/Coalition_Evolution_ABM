@@ -9,6 +9,23 @@ import java.util.ArrayList;
 
 public class Environment extends SimStateSweep implements Steppable
 {
+	public enum SuccessMode {
+		COIN_FLIP,
+		FA_LOGISTIC,
+		FA_LOGISTIC_HERDING
+	}
+
+	public enum ParticipationMode {
+		BASELINE,
+		STATE_THRESHOLD,
+		STATE_EV
+	}
+
+	public enum AlternativeMode {
+		NONE,
+		SNEAKER
+	}
+
 	//population variables
 	public int n =10000; //number of baboons at simulation start
 	public int groups = 175; //number of groups at simulation start
@@ -21,6 +38,24 @@ public class Environment extends SimStateSweep implements Steppable
 	public double initialCoalitionFrequency = 0.01; //frequency of coalition gene in adult males at simulation start
 	public double mutationRate = 0.01; //rate of mutations in cooperative genotype
 	public double migrationMortalityRate = 0.30; //30% chance a male will die when leaving their natal group
+
+	//coalition mode switches
+	public SuccessMode successMode = SuccessMode.FA_LOGISTIC;
+	public ParticipationMode participationMode = ParticipationMode.BASELINE;
+	public AlternativeMode alternativeMode = AlternativeMode.NONE;
+
+	//coalition parameters
+	public double coalitionWinBeta = 1.0;
+	public double coalitionDefenseBonus = 1.0;
+	public double coalitionFaThreshold = 0.5;
+	public int coalitionRankThreshold = 5;
+	public boolean requireCoalitionGeneForStateDependentMode = true;
+	public double coalitionBenefit = 1.0;
+	public double coalitionChallengeCost = 0.0;
+	public double baselineMatingBenefit = 0.0;
+	public double futureFitnessWeight = 1.0;
+	public double sneakerSuccessProbability = 0.1;
+	public boolean disruptionEnablesSneaking = true;
 	
 	//age variables
 	public double averageAge; 

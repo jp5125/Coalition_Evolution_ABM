@@ -37,6 +37,7 @@ public class Baboon implements Steppable
 	double fightingAbility; //double between 1.0 and 0.0, drops as males age
 	int dominanceRank; //calculated based on comparisons of fighting abilities of other males within a group
 	boolean hasCoalitionGene; //whether or not a male has the coalition gene
+	public boolean hasSneakerTrait = false;
 	boolean fatherHasCoalitionGene; //whether or not a newborn male's father had the coalition gene
 	public int offspringCount = 0; //tracks number of offspring a male sires throughout his lifetime
 	public int primeOffspring = 0; //tracks number of offspring sired when male is in prime life-history stage

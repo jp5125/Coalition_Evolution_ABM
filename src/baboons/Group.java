@@ -174,11 +174,11 @@ public class Group implements Steppable
 	public void coalitionGame()
 	{
 		//Clear previous lists
-		fertileFemales.clear(); 
+		fertileFemales.clear();
 		consortMales.clear();
-		
+
 		//Identify fertile females in the group
-		ArrayList<Baboon> sortedFemales = new ArrayList<>(); //create an empty ArrayList to store fertile females in 
+		ArrayList<Baboon> sortedFemales = new ArrayList<>(); //create an empty ArrayList to store fertile females in
 		for(Object obj : members) //for each baboon in the group's members bag
 		{
 			Baboon b = (Baboon) obj; //cast each object in the bag as type baboon and assign it as a baboon object "b"
@@ -187,10 +187,10 @@ public class Group implements Steppable
 				sortedFemales.add(b);
 			}
 		}
-		
+
 		//Next, we sort fertile females by closeness to peak fertility (day 30 optimal)
 		//Use a comparator to compare the absolute difference between each pair of females in the sortedFemales ArrayList
-		sortedFemales.sort(new Comparator<Baboon>() 
+		sortedFemales.sort(new Comparator<Baboon>()
 		{
 			@Override
 			public int compare(Baboon female1, Baboon female2)
@@ -199,11 +199,11 @@ public class Group implements Steppable
 				int diff2 = Math.abs(female2.cycleDay - 30);
 				return Integer.compare(diff1, diff2);
 			}
-				
+
 		});
-		
+
 		fertileFemales.addAll(sortedFemales); //Add all sorted females to the fertileFemales list
-		
+
 		//Identify male baboons in group
 		ArrayList<Baboon> sortedMales = new ArrayList<>();
 		for(Object obj : members)
@@ -214,7 +214,7 @@ public class Group implements Steppable
 				sortedMales.add(b);
 			}
 		}
-		
+
 		//Sort males by dominance rank in asceending order
 		sortedMales.sort(new Comparator<Baboon>()
 		{
@@ -224,23 +224,23 @@ public class Group implements Steppable
 				return Integer.compare(m1.dominanceRank, m2.dominanceRank);
 			}
 		});
-		
+
 		//Now we can assign initial consortships
 		int maleIndex = 0;
 		for(Baboon female : fertileFemales) //for each female in the fertileFemales ArrayList
 		{
-			if(maleIndex >= sortedMales.size()) //case where no more males are available to pair with 
+			if(maleIndex >= sortedMales.size()) //case where no more males are available to pair with
 			{
 				break;
 			}
-			
-			Baboon consortMale = sortedMales.get(maleIndex); 
+
+			Baboon consortMale = sortedMales.get(maleIndex);
 			maleIndex++;
-			
+
 			consortMales.add(consortMale); //Add to consort males list
-			female.currentConsortMale = consortMale; //Set the female's state variable for 'currentConsortmale' to the current 
+			female.currentConsortMale = consortMale; //Set the female's state variable for 'currentConsortmale' to the current
 			female.recordMating(consortMale); //record the mating event for the initial consortship
-			
+
 		}
 		/*System.out.println("=== Initial Consort Assignments ===");
 		for (Baboon male : consortMales) {
@@ -249,46 +249,54 @@ public class Group implements Steppable
 		                       " | LifeStage: " + male.getLifeStage() +
 		                       " | hasCoalitionGene: " + male.hasCoalitionGene);
 		}*/
-		
+
 		//Identify males eligible to form a coalition
 		ArrayList<Baboon> coalitionaryMales = new ArrayList<>();
-		
+
 		for(Baboon male : sortedMales) //for each male in the sorted list of males by rank
 		{
-			if(male.hasCoalitionGene && !consortMales.contains(male) && (male.getLifeStage() == LifeStage.POST_PRIME || male.getLifeStage() == LifeStage.SENESCENT)) //if the male has a the coalition gene and is not a consort
+			if(maleAttemptsCoalition(male, state))
 			{
 				coalitionaryMales.add(male);
 			}
 		}
-		
+
 		//randomly pair males in coalitionaryMales into coalitions (add more detail in later model iteration for strategic pairing)
-		 ArrayList<ArrayList<Baboon>> coalitions = formCoalitions(coalitionaryMales);
-		 
-		 /*System.out.println("=== Coalition Participants ===");
-		 for (Baboon male : coalitionaryMales) {
-		     System.out.println("Coalition Male | Rank: " + male.dominanceRank +
-		                        " | FA: " + male.fightingAbility +
-		                        " | LifeStage: " + male.getLifeStage() +
-		                        " | hasCoalitionGene: " + male.hasCoalitionGene);
-		 }*/
-		
-		//coalitions challenge consorts and then resolve the conflicts through the helper method
-		 resolveCoalitionChallenges(coalitions);
-		 
+		ArrayList<ArrayList<Baboon>> coalitions = formCoalitions(coalitionaryMales);
+
+		/*System.out.println("=== Coalition Participants ===");
+		for (Baboon male : coalitionaryMales) {
+		    System.out.println("Coalition Male | Rank: " + male.dominanceRank +
+		                       " | FA: " + male.fightingAbility +
+		                       " | LifeStage: " + male.getLifeStage() +
+		                       " | hasCoalitionGene: " + male.hasCoalitionGene);
+		}*/
+
+		for(ArrayList<Baboon> coalition : coalitions)
+		{
+			if(fertileFemales.isEmpty()) continue;
+			Baboon targetFemale = fertileFemales.get(state.random.nextInt(fertileFemales.size()));
+			Baboon currentConsort = targetFemale.currentConsortMale;
+			Baboon male1 = coalition.get(0);
+			Baboon male2 = coalition.get(1);
+			ChallengeOutcome outcome = resolveCoalitionChallenge(male1, male2, targetFemale, currentConsort, state);
+			applyAlternativeTactics(outcome, state);
+		}
+
 		//per-day mating record updating, ensures males who are consorts for multiple days in a row get more than 1 mating record for their consortship
-		 for(Baboon female : fertileFemales)
-		 {
-			 Baboon consort = female.currentConsortMale;
-			 if(consort != null)
-			 {
-				 female.recordMating(consort);
-			 }
-		 }
-		
+		for(Baboon female : fertileFemales)
+		{
+			Baboon consort = female.currentConsortMale;
+			if(consort != null)
+			{
+				female.recordMating(consort);
+			}
+		}
+
 	}
-	
+
 	// Utility method to form coalitions(randomly)
-	public ArrayList<ArrayList<Baboon>> formCoalitions(ArrayList<Baboon> eligibleMales) 
+	public ArrayList<ArrayList<Baboon>> formCoalitions(ArrayList<Baboon> eligibleMales)
 	{
 	    ArrayList<ArrayList<Baboon>> coalitions = new ArrayList<>();
 
@@ -296,7 +304,7 @@ public class Group implements Steppable
 	    Collections.shuffle(eligibleMales, new Random(state.random.nextLong()));
 
 	    // Pair them
-	    for (int i = 0; i < eligibleMales.size() - 1; i += 2) 
+	    for (int i = 0; i < eligibleMales.size() - 1; i += 2)
 	    {
 	        ArrayList<Baboon> pair = new ArrayList<>();
 	        pair.add(eligibleMales.get(i));
@@ -306,90 +314,257 @@ public class Group implements Steppable
 
 	    return coalitions;
 	}
-	
-	//utility method for coalition challenges in the coalition game
-	public void resolveCoalitionChallenges(ArrayList<ArrayList<Baboon>> coalitions)
+
+	private boolean maleAttemptsCoalition(Baboon male, Environment env)
 	{
-		for(ArrayList<Baboon> coalition : coalitions) //for each coalitionary pairing in the coalitions arraylist
+		if(male == null || !male.isMale() || male.isJuvenile)
 		{
-			if(fertileFemales.isEmpty()) continue; //if there are no fertile females, skip this pairing (and subsequent pairings)
-			Baboon targetFemale = fertileFemales.get(state.random.nextInt(fertileFemales.size())); //randomly select a target female for coalition challenge
-			Baboon currentConsort = targetFemale.currentConsortMale; //identify targetFemale's consort male and save as currentConsort
-			
-			//Coalition members
-			Baboon male1 = coalition.get(0);
-			Baboon male2 = coalition.get(1);
-			
-			
-			if(currentConsort == null) //handles cases where female has no consort but coalitions have already paired
+			return false;
+		}
+		if(consortMales.contains(male))
+		{
+			return false;
+		}
+
+		switch(env.participationMode)
+		{
+		case BASELINE:
+			return male.hasCoalitionGene
+				&& (male.getLifeStage() == LifeStage.POST_PRIME || male.getLifeStage() == LifeStage.SENESCENT);
+		case STATE_THRESHOLD:
+			if(env.requireCoalitionGeneForStateDependentMode && !male.hasCoalitionGene)
 			{
-				Baboon newConsort; 
-				if(state.random.nextBoolean()) //if this returns true, male1 becomes the new consort
-				{
-					newConsort = male1;
-				}
-				else //otherwise, male2 becomes the new consort, should be 50-50 prob.
-				{
-					newConsort = male2;
-				}
-				
-				
-				targetFemale.currentConsortMale = newConsort; //assign the females current consort as the newly decided consort
-				consortMales.add(newConsort); //add the new consort male to the list of consort males
-				targetFemale.recordMating(newConsort); //record mating event between new consort male and fertile female
+				return false;
 			}
-			else //handles all normal cases where the fertile female has a consort and the coalition challenges him
+			return male.getLifeStage() == LifeStage.POST_PRIME
+				|| male.getLifeStage() == LifeStage.SENESCENT
+				|| male.calculateFightingAbilityLogistic() < env.coalitionFaThreshold
+				|| male.dominanceRank > env.coalitionRankThreshold;
+		case STATE_EV:
+			if(env.requireCoalitionGeneForStateDependentMode && !male.hasCoalitionGene)
 			{
-				
-				//challenge occurs
-				boolean coalitionWins = state.random.nextBoolean(); // 50% chance coalition wins against consort male (base case, more complex strategies later)
-				if(coalitionWins)
+				return false;
+			}
+
+			double maleFA = male.calculateFightingAbilityLogistic();
+			double partnerFA = maleFA;
+			double bestConsortFA = 0.0;
+
+			for(Object obj : members)
+			{
+				Baboon other = (Baboon) obj;
+				if(!other.isMale() || other.isJuvenile)
 				{
-					//Randomly select new consort from coalition members (same logic as above)
-					Baboon newConsort; 
-					if(state.random.nextBoolean())
-					{
-						newConsort = male1;
-					}
-					else
-					{
-						newConsort = male2;
-					}
-					targetFemale.currentConsortMale = newConsort; //assign the new consort as the targetFemale's currentConsortMale
-					
-					//Update consort male list
-					consortMales.remove(currentConsort); //remove the old consort male from list of current consort males
-					consortMales.add(newConsort);
-					
-					targetFemale.recordMating(newConsort); //record the mating event with the coalitionary male
-					
-					//Apply costs to every male involved
-					mortalWoundConsort(currentConsort);
-					mortalWoundCoalition(male1);
-					mortalWoundCoalition(male2);
-					
-					/*
-					applyFightingCost(currentConsort);
-					applyFightingCost(male1);
-					applyFightingCost(male2);
-					*/
+					continue;
 				}
-				else
+
+				double otherFA = other.calculateFightingAbilityLogistic();
+				if(consortMales.contains(other))
 				{
-					mortalWoundConsort(currentConsort);
-					mortalWoundCoalition(male1);
-					mortalWoundCoalition(male2);
-					/*
-					applyFightingCost(currentConsort);
-					applyFightingCost(male1);
-					applyFightingCost(male2);
-					*/
+					bestConsortFA = Math.max(bestConsortFA, otherFA);
+				}
+				else if(other != male)
+				{
+					boolean partnerEligibleByGene = !env.requireCoalitionGeneForStateDependentMode || other.hasCoalitionGene;
+					if(partnerEligibleByGene)
+					{
+						partnerFA = Math.max(partnerFA, otherFA);
+					}
 				}
 			}
+
+			double pWin = 0.5;
+			if(bestConsortFA > 0.0)
+			{
+				double coalitionStrength = maleFA + partnerFA;
+				double consortStrength = bestConsortFA * env.coalitionDefenseBonus;
+				pWin = 1.0 / (1.0 + Math.exp(-env.coalitionWinBeta * (coalitionStrength - consortStrength)));
+			}
+
+			double mortalityRisk = male.probMortalWoundCoalition;
+			double residualFitnessTerm = Math.max(0.0, 1.0 - ((double) male.age / Math.max(1.0, (double) male.maxAge)));
+			double evCoalition = pWin * env.coalitionBenefit
+				- env.coalitionChallengeCost
+				- mortalityRisk * env.futureFitnessWeight * residualFitnessTerm;
+			double evNonCoalition = env.baselineMatingBenefit;
+			return evCoalition > evNonCoalition;
+		default:
+			return false;
 		}
 	}
-	
-	//utility method for cost to fighting
+
+	private ChallengeOutcome resolveCoalitionChallenge(
+		Baboon male1,
+		Baboon male2,
+		Baboon targetFemale,
+		Baboon currentConsort,
+		Environment env
+	)
+	{
+		ChallengeOutcome outcome = new ChallengeOutcome();
+		outcome.targetFemale = targetFemale;
+		outcome.oldConsort = currentConsort;
+		outcome.coalitionMale1 = male1;
+		outcome.coalitionMale2 = male2;
+
+		if(targetFemale == null)
+		{
+			return outcome;
+		}
+
+		if(currentConsort == null)
+		{
+			outcome.coalitionSucceeded = true;
+			outcome.disruptionOccurred = true;
+			outcome.pWin = 1.0;
+			outcome.newConsort = chooseNewConsortAfterCoalitionWin(male1, male2, env);
+			targetFemale.currentConsortMale = outcome.newConsort;
+			consortMales.add(outcome.newConsort);
+			targetFemale.recordMating(outcome.newConsort);
+			return outcome;
+		}
+
+		switch(env.successMode)
+		{
+		case COIN_FLIP:
+			outcome.pWin = 0.5;
+			outcome.coalitionSucceeded = env.random.nextBoolean();
+			outcome.disruptionOccurred = outcome.coalitionSucceeded;
+			break;
+		case FA_LOGISTIC:
+		{
+			double fa1 = male1.calculateFightingAbilityLogistic();
+			double fa2 = male2.calculateFightingAbilityLogistic();
+			double consortFA = currentConsort.calculateFightingAbilityLogistic();
+			double coalitionStrength = fa1 + fa2;
+			double consortStrength = consortFA * env.coalitionDefenseBonus;
+			outcome.pWin = 1.0 / (1.0 + Math.exp(-env.coalitionWinBeta * (coalitionStrength - consortStrength)));
+			outcome.coalitionSucceeded = env.random.nextDouble() < outcome.pWin;
+			outcome.disruptionOccurred = outcome.coalitionSucceeded;
+			break;
+		}
+		case FA_LOGISTIC_HERDING:
+		{
+			double fa1 = male1.calculateFightingAbilityLogistic();
+			double fa2 = male2.calculateFightingAbilityLogistic();
+			double consortFA = currentConsort.calculateFightingAbilityLogistic();
+			double coalitionStrength = fa1 + fa2;
+			double consortStrength = consortFA * env.coalitionDefenseBonus;
+			double pDisruption = 1.0 / (1.0 + Math.exp(-env.coalitionWinBeta * (coalitionStrength - consortStrength)));
+			double strengthTotal = coalitionStrength + consortStrength;
+			double pRetain = strengthTotal > 0.0 ? consortStrength / strengthTotal : 0.5;
+			outcome.pWin = pDisruption * (1.0 - pRetain);
+			outcome.disruptionOccurred = env.random.nextDouble() < pDisruption;
+			if(outcome.disruptionOccurred)
+			{
+				outcome.consortRetainedFemale = env.random.nextDouble() < pRetain;
+				outcome.coalitionSucceeded = !outcome.consortRetainedFemale;
+			}
+			else
+			{
+				outcome.consortRetainedFemale = true;
+				outcome.coalitionSucceeded = false;
+			}
+			break;
+		}
+		default:
+			outcome.pWin = 0.5;
+			outcome.coalitionSucceeded = env.random.nextBoolean();
+			outcome.disruptionOccurred = outcome.coalitionSucceeded;
+			break;
+		}
+
+		if(outcome.coalitionSucceeded)
+		{
+			outcome.newConsort = chooseNewConsortAfterCoalitionWin(male1, male2, env);
+			targetFemale.currentConsortMale = outcome.newConsort;
+			consortMales.remove(currentConsort);
+			consortMales.add(outcome.newConsort);
+			targetFemale.recordMating(outcome.newConsort);
+		}
+
+		mortalWoundConsort(currentConsort);
+		mortalWoundCoalition(male1);
+		mortalWoundCoalition(male2);
+		return outcome;
+	}
+
+	private void applyAlternativeTactics(ChallengeOutcome outcome, Environment env)
+	{
+		if(outcome == null || outcome.targetFemale == null)
+		{
+			return;
+		}
+
+		switch(env.alternativeMode)
+		{
+		case NONE:
+			return;
+		case SNEAKER:
+			if(!env.disruptionEnablesSneaking || !outcome.disruptionOccurred)
+			{
+				return;
+			}
+
+			ArrayList<Baboon> sneakerMales = new ArrayList<>();
+			for(Object obj : members)
+			{
+				Baboon male = (Baboon) obj;
+				if(!male.isMale() || male.isJuvenile || !male.hasSneakerTrait)
+				{
+					continue;
+				}
+				if(male == outcome.coalitionMale1 || male == outcome.coalitionMale2)
+				{
+					continue;
+				}
+				if(male == outcome.oldConsort || male == outcome.newConsort)
+				{
+					continue;
+				}
+				sneakerMales.add(male);
+			}
+
+			if(sneakerMales.isEmpty())
+			{
+				return;
+			}
+
+			Baboon sneaker = sneakerMales.get(env.random.nextInt(sneakerMales.size()));
+			if(env.random.nextDouble() < env.sneakerSuccessProbability)
+			{
+				outcome.targetFemale.recordMating(sneaker);
+				outcome.sneakerMatingOccurred = true;
+			}
+			return;
+		default:
+			return;
+		}
+	}
+
+	private Baboon chooseNewConsortAfterCoalitionWin(Baboon male1, Baboon male2, Environment env)
+	{
+		if(env.random.nextBoolean())
+		{
+			return male1;
+		}
+		return male2;
+	}
+
+	private static class ChallengeOutcome
+	{
+		boolean coalitionSucceeded;
+		boolean disruptionOccurred;
+		Baboon newConsort;
+		Baboon targetFemale;
+		Baboon oldConsort;
+		Baboon coalitionMale1;
+		Baboon coalitionMale2;
+		double pWin;
+		boolean consortRetainedFemale;
+		boolean sneakerMatingOccurred;
+	}
+//utility method for cost to fighting
 	public void applyFightingCost(Baboon male, double fightingCost)
 	{
 		fightingCost = cost; 
