@@ -79,7 +79,6 @@ public class Group implements Steppable
 		
 	}
 	
-	
 	//initial dominance hierarchy implementation, unsure of hidden bugs due to redrawing from a bag so this method was re-implemented using an ArrayList below
 	public void updateDominanceHierarchyBag() 
 	{
@@ -127,6 +126,7 @@ public class Group implements Steppable
 	    } 
     }
 	
+
 	//Uses an ArrayList to keep track of the dominance hierarchy instead of a bag to avoid ordering errors with repeatedy drawing from a bag
 	public void updateDominanceHierarchyArray()
 	{
@@ -242,13 +242,6 @@ public class Group implements Steppable
 			female.recordMating(consortMale); //record the mating event for the initial consortship
 
 		}
-		/*System.out.println("=== Initial Consort Assignments ===");
-		for (Baboon male : consortMales) {
-		    System.out.println("Consort Male | Rank: " + male.dominanceRank +
-		                       " | FA: " + male.fightingAbility +
-		                       " | LifeStage: " + male.getLifeStage() +
-		                       " | hasCoalitionGene: " + male.hasCoalitionGene);
-		}*/
 
 		//Identify males eligible to form a coalition
 		ArrayList<Baboon> coalitionaryMales = new ArrayList<>();
@@ -263,14 +256,6 @@ public class Group implements Steppable
 
 		//randomly pair males in coalitionaryMales into coalitions (add more detail in later model iteration for strategic pairing)
 		ArrayList<ArrayList<Baboon>> coalitions = formCoalitions(coalitionaryMales);
-
-		/*System.out.println("=== Coalition Participants ===");
-		for (Baboon male : coalitionaryMales) {
-		    System.out.println("Coalition Male | Rank: " + male.dominanceRank +
-		                       " | FA: " + male.fightingAbility +
-		                       " | LifeStage: " + male.getLifeStage() +
-		                       " | hasCoalitionGene: " + male.hasCoalitionGene);
-		}*/
 
 		for(ArrayList<Baboon> coalition : coalitions)
 		{
@@ -616,174 +601,6 @@ public class Group implements Steppable
 	        System.out.println("Group dispersed from (" + x + ", " + y + ") to (" + newGroup.x + ", " + newGroup.y + ")");
 	    }
 	}
-	
-	//method for when group reaches maximum size
-	
-	/*
-	 * This method, while more detailed (females split by matriline, males migrate preferentially based on coalition gene status)
-	 * created several spacing bugs that caused small clusters of groups to develop and constantly exchange individuals. Almost like an accidental
-	 * assortment mechanism. We don't want this because it prevents exchange of individuals outside of localized clusters once the simulation is off the ground
-	 * the fissionUpdated() method is used to account for these artifacts and produce the spatial behavior we want to explore coalitionary dynamics
-	 * 
-	 
-	  public void fission(Environment state)
-	 
-	{
-		double now = state.schedule.getTime(); //current time step for scheduling new groups
-		  
-		if(members.numObjs >= state.maxGroupSize) //if a group becomes the size of, or supasses, the maximum group size
-		{
-			
-			// first, create new group and place nearby
-			Group newGroup = new Group(state); //generate a new empty group
-			Int2D currentLocation = state.sparseSpace.getObjectLocation(this); //the new group's location is the same as the group that runs the group.fission()
-			int dx = state.random.nextInt(5) - 2; //-2 to +2 for new x-axis value
-			int dy = state.random.nextInt(5) - 2; //same for y-axis
-			Int2D newLocation = new Int2D(
-					Math.min(state.gridWidth - 1, Math.max(0, currentLocation.x + dx)),
-					Math.min(state.gridHeight - 1, Math.max(0, currentLocation.y + dy))
-					); //determines new location for the new group
-			state.sparseSpace.setObjectLocation(newGroup, newLocation); //then sets new groups new location
-			newGroup.x = newLocation.x;
-			newGroup.y = newLocation.y;
-			newGroup.event = state.schedule.scheduleRepeating(now + state.scheduleTimeInterval, 1, newGroup, state.scheduleTimeInterval); //adds the new group to the schedule
-		
-				
-			
-			 // We want fission to happen based on matrilineal splitting, so related females will move to new group or stay in old
-			 // group together. Males stay/leave randomly, except cooperating males will join same group. 
-			 // We use a HashMap to collect matrilines, where matrilineID is the key and a bag of female objects containing
-			 // the memebers of the matriline is the value. Adult Males are stored in their own bag and don't need to be sorted based
-			 // on matriline, however all juveniles regardless of sex migrate with their mothers matriline (hence why males have a matriline ID).
-			 
-		
-			HashMap<String, Bag> matrilines = new HashMap<>();
-			Bag adultMales = new Bag();
-		
-			for(int i = 0; i < members.numObjs; i++) //iterate across all group members
-			{
-				Baboon b = (Baboon) members.objs[i];
-			
-				if (!b.isMale() || (b.isMale() && b.isJuvenile)) // Female or juvenile male
-				{
-					Bag groupBag = matrilines.get(b.matrilineID); 
-					if (groupBag == null) 
-					{
-						groupBag = new Bag();
-						matrilines.put(b.matrilineID, groupBag);
-					}
-					groupBag.add(b);
-				}
-				else 
-				{
-					adultMales.add(b);
-				}
-			
-			}
-			//Once female sorting is complete, we want to separate matrilines into the new and old group
-			ArrayList<String> matrilineKeys = new ArrayList<>(matrilines.keySet()); //create an arrayList of matrilineIDs
-			Bag matrilineKeyBag = new Bag(matrilineKeys);
-			matrilineKeyBag.shuffle(state.random);
-		
-			for(int i = 0; i < matrilineKeyBag.size(); i++) //for each matriline in the arrayList
-			{
-				String matrilineID = (String) matrilineKeyBag.objs[i];
-				Bag groupBag = matrilines.get(matrilineID);
-				Group targetGroup;
-			
-				if (i % 2 == 0) 
-				{
-					targetGroup = this; // assign to the original group
-				} 
-				else 
-				{
-					targetGroup = newGroup; // assign to the newly created group
-				}
-
-				for (int j = 0; j < groupBag.numObjs; j++)
-				{
-					Baboon b = (Baboon) groupBag.objs[j];
-					this.members.remove(b);
-					targetGroup.members.add(b);
-					b.setGroup(targetGroup);
-					b.x = targetGroup.x;
-					b.y = targetGroup.y;
-					
-					if(b.event == null)
-					{
-						b.event = state.schedule.scheduleRepeating(now + state.scheduleTimeInterval, 0, b, state.scheduleTimeInterval);
-					}
-				}
-				//otherwise the female remains in the old group
-			}
-		
-			//now we need to randomly assign males to either stay in the old group or join the new group
-			Bag coalitionMales = new Bag();
-			Bag nonCoalitionMales = new Bag();
-		
-			for(int i = 0; i < adultMales.numObjs; i++) //for each object in the males bag
-			{
-				Baboon m = (Baboon) adultMales.objs[i]; //cast this object as type Baboon
-				if(m.hasCoalitionGene)
-				{
-					coalitionMales.add(m);
-				}
-				else
-				{
-					nonCoalitionMales.add(m);
-				}
-			}
-		
-			//shuffle and move half from each bag of males
-			coalitionMales.shuffle(state.random);
-			nonCoalitionMales.shuffle(state.random);
-			int coalitionSplit = coalitionMales.numObjs / 2;
-			int nonCoalitionSplit = nonCoalitionMales.numObjs / 2;
-	    
-			for(int i = 0; i < coalitionMales.numObjs; i++)
-			{
-				Baboon m = (Baboon) coalitionMales.objs[i];
-				if(i < coalitionSplit)
-				{
-					members.remove(m);
-					m.setGroup(newGroup);
-					newGroup.members.add(m);
-					
-					m.x = newGroup.x;
-					m.y = newGroup.y;
-					
-					if(m.event == null)
-					{
-						m.event = state.schedule.scheduleRepeating(now + state.scheduleTimeInterval, 0, m, state.scheduleTimeInterval);
-					}
-				}
-			}
-	    
-			for(int i = 0; i < nonCoalitionMales.numObjs; i++)
-			{
-				Baboon m = (Baboon) nonCoalitionMales.objs[i]; 
-				if(i < nonCoalitionSplit)
-				{
-					members.remove(m);
-					m.setGroup(newGroup);
-					newGroup.members.add(m);
-					
-					m.x = newGroup.x;
-					m.y = newGroup.y;
-					
-					if(m.event == null)
-					{
-						m.event = state.schedule.scheduleRepeating(now + state.scheduleTimeInterval,0,m, state.scheduleTimeInterval);
-					}
-				}
-			}
-			//update dominance hierarchies after group shuffling
-			this.updateDominanceHierarchyArray();
-			newGroup.updateDominanceHierarchyArray();
-		}
-		
-	}
-	*/
 	
 	public void fissionUpdated(Environment state)
 	{
