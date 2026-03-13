@@ -50,7 +50,7 @@ public class Environment extends SimStateSweep implements Steppable
 	public double coalitionFaThreshold = 0.5;
 	public int coalitionRankThreshold = 5;
 	public boolean requireCoalitionGeneForStateDependentMode = true;
-	public double coalitionBenefit = 1.0;
+	public static double coalitionBenefit = 1.0;
 	public double coalitionChallengeCost = 0.0;
 	public double baselineMatingBenefit = 0.0;
 	public double futureFitnessWeight = 1.0;

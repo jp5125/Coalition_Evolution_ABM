@@ -300,41 +300,53 @@ public class Group implements Steppable
 	    return coalitions;
 	}
 
-	private boolean maleAttemptsCoalition(Baboon male, Environment env)
+	private boolean maleAttemptsCoalition(Baboon male, Environment state)
 	{
+		//if the agent is not male or is not an adult, return false
 		if(male == null || !male.isMale() || male.isJuvenile)
 		{
 			return false;
 		}
+		
+		//if the male is a consort male, he is not eligible to join a coalition, thus return false
 		if(consortMales.contains(male))
 		{
 			return false;
 		}
-
-		switch(env.participationMode)
+		
+		//switch statement to determine which information is used in the coalition participation decision making
+		switch(state.participationMode)
 		{
+		//baseline case: 
 		case BASELINE:
-			return male.hasCoalitionGene
-				&& (male.getLifeStage() == LifeStage.POST_PRIME || male.getLifeStage() == LifeStage.SENESCENT);
+			return male.hasCoalitionGene && (male.getLifeStage() == LifeStage.POST_PRIME || male.getLifeStage() == LifeStage.SENESCENT);
+		
+		//state-dependent threshold case:
 		case STATE_THRESHOLD:
-			if(env.requireCoalitionGeneForStateDependentMode && !male.hasCoalitionGene)
+			if(state.requireCoalitionGeneForStateDependentMode && !male.hasCoalitionGene)
 			{
 				return false;
 			}
 			return male.getLifeStage() == LifeStage.POST_PRIME
 				|| male.getLifeStage() == LifeStage.SENESCENT
-				|| male.calculateFightingAbilityLogistic() < env.coalitionFaThreshold
-				|| male.dominanceRank > env.coalitionRankThreshold;
+				|| male.calculateFightingAbilityLogistic() < state.coalitionFaThreshold
+				|| male.dominanceRank > state.coalitionRankThreshold;
+		
+		//expected value of coalition case:
 		case STATE_EV:
-			if(env.requireCoalitionGeneForStateDependentMode && !male.hasCoalitionGene)
+			//return false if male does not have coalition gene
+			if(state.requireCoalitionGeneForStateDependentMode && !male.hasCoalitionGene)
 			{
 				return false;
 			}
-
+			
+			//initialize focal male and comparison variables
 			double maleFA = male.calculateFightingAbilityLogistic();
+			//we set partnerFA equal to maleFA so if no partner is found, the male will evaluate his singleton coalition strength as just his own FA
 			double partnerFA = maleFA;
 			double bestConsortFA = 0.0;
 
+			//scan through all group members
 			for(Object obj : members)
 			{
 				Baboon other = (Baboon) obj;
@@ -342,15 +354,18 @@ public class Group implements Steppable
 				{
 					continue;
 				}
-
+				
+				
+				//calculate each other male's FA, track the strongest male FA
 				double otherFA = other.calculateFightingAbilityLogistic();
 				if(consortMales.contains(other))
 				{
 					bestConsortFA = Math.max(bestConsortFA, otherFA);
 				}
+				//find the strongest possible coalition partner
 				else if(other != male)
 				{
-					boolean partnerEligibleByGene = !env.requireCoalitionGeneForStateDependentMode || other.hasCoalitionGene;
+					boolean partnerEligibleByGene = !state.requireCoalitionGeneForStateDependentMode || other.hasCoalitionGene;
 					if(partnerEligibleByGene)
 					{
 						partnerFA = Math.max(partnerFA, otherFA);
@@ -358,32 +373,42 @@ public class Group implements Steppable
 				}
 			}
 
+			//estimate coalition success probability, default to 0.5 if no partner is found
 			double pWin = 0.5;
 			if(bestConsortFA > 0.0)
 			{
 				double coalitionStrength = maleFA + partnerFA;
-				double consortStrength = bestConsortFA * env.coalitionDefenseBonus;
-				pWin = 1.0 / (1.0 + Math.exp(-env.coalitionWinBeta * (coalitionStrength - consortStrength)));
+				double consortStrength = bestConsortFA * state.coalitionDefenseBonus;
+				pWin = 1.0 / (1.0 + Math.exp(-state.coalitionWinBeta * (coalitionStrength - consortStrength))); //logistic win function
 			}
 
 			double mortalityRisk = male.probMortalWoundCoalition;
-			double residualFitnessTerm = Math.max(0.0, 1.0 - ((double) male.age / Math.max(1.0, (double) male.maxAge)));
-			double evCoalition = pWin * env.coalitionBenefit
-				- env.coalitionChallengeCost
-				- mortalityRisk * env.futureFitnessWeight * residualFitnessTerm;
-			double evNonCoalition = env.baselineMatingBenefit;
+			double residualFitnessTerm = Math.max(0.0, 1.0 - ((double) male.age / Math.max(1.0, (double) male.maxAge))); //function that estimates future reproductive value remaining
+			
+			//formula that calculates the expected value of the coalition
+			/*
+			 * pWin * state.coalitionBenefit term is the expected reward from the coalition
+			 * - state.coalitionChallengeCost term is the cost of attempting a coalition
+			 * - mortalityRisk * state.futureFitnessWeight * residualFitnessWeight term is a penalization for coalitions being dangerous
+			 * 
+			 */
+			double evCoalition = pWin * state.coalitionBenefit - state.coalitionChallengeCost - mortalityRisk * state.futureFitnessWeight * residualFitnessTerm;
+			
+			//payoff for doing nothing 
+			double evNonCoalition = state.baselineMatingBenefit;
 			return evCoalition > evNonCoalition;
 		default:
 			return false;
 		}
 	}
 
+	//new method for resolving a coalition challenge, stores all relevant data in an instance of the ChallengeOutcome class
 	private ChallengeOutcome resolveCoalitionChallenge(
 		Baboon male1,
 		Baboon male2,
 		Baboon targetFemale,
 		Baboon currentConsort,
-		Environment env
+		Environment state
 	)
 	{
 		ChallengeOutcome outcome = new ChallengeOutcome();
@@ -396,53 +421,78 @@ public class Group implements Steppable
 		{
 			return outcome;
 		}
-
+		
+		//if there is not consort male currently
 		if(currentConsort == null)
 		{
 			outcome.coalitionSucceeded = true;
 			outcome.disruptionOccurred = true;
 			outcome.pWin = 1.0;
-			outcome.newConsort = chooseNewConsortAfterCoalitionWin(male1, male2, env);
+			outcome.newConsort = chooseNewConsortAfterCoalitionWin(male1, male2, state);
 			targetFemale.currentConsortMale = outcome.newConsort;
 			consortMales.add(outcome.newConsort);
 			targetFemale.recordMating(outcome.newConsort);
 			return outcome;
 		}
-
-		switch(env.successMode)
+		
+		//in all other cases where there is a consort male and a coalition challenge has been initiated, coalition success is determined under different conditions
+		switch(state.successMode)
 		{
+		//original 50/50 chance of coalition success
 		case COIN_FLIP:
 			outcome.pWin = 0.5;
-			outcome.coalitionSucceeded = env.random.nextBoolean();
+			outcome.coalitionSucceeded = state.random.nextBoolean();
 			outcome.disruptionOccurred = outcome.coalitionSucceeded;
 			break;
+		
+		//uses FA in order todetermine the likelihood of the coalition beating the consort
 		case FA_LOGISTIC:
 		{
 			double fa1 = male1.calculateFightingAbilityLogistic();
 			double fa2 = male2.calculateFightingAbilityLogistic();
 			double consortFA = currentConsort.calculateFightingAbilityLogistic();
 			double coalitionStrength = fa1 + fa2;
-			double consortStrength = consortFA * env.coalitionDefenseBonus;
-			outcome.pWin = 1.0 / (1.0 + Math.exp(-env.coalitionWinBeta * (coalitionStrength - consortStrength)));
-			outcome.coalitionSucceeded = env.random.nextDouble() < outcome.pWin;
+			double consortStrength = consortFA;
+			
+			//calculates the probability the coalition wins, tuned by Beta parameter. Higher beta = more deterministic, lower beta is noisier
+			outcome.pWin = 1.0 / (1.0 + Math.exp(-state.coalitionWinBeta * (coalitionStrength - consortStrength)));
+			outcome.coalitionSucceeded = state.random.nextDouble() < outcome.pWin;
 			outcome.disruptionOccurred = outcome.coalitionSucceeded;
 			break;
 		}
+		
+		/*
+		 * This is a more general case where the coalition attempts to disrupt the consort male's defense of the female. 
+		 * Rather than just calculate if the coalition beats the consort and takes over, this code models whether the male can disrupt the consort male
+		 * and take the female. It models the harrassment/herding/interference dynamics of the system. 
+		 * 
+		 * There are 3 outcomes in this case, rather than just coalition success or failure.
+		 * Coalition fails to disrupt consort -> consort male retains female
+		 * Coalition disrupts consort male -> consort male still retains female (consort male successfully herded female)
+		 * Coalition disrupts consort male -> coalition succeeds and one coalition male becomes new consort 
+		 */
+		
 		case FA_LOGISTIC_HERDING:
 		{
 			double fa1 = male1.calculateFightingAbilityLogistic();
 			double fa2 = male2.calculateFightingAbilityLogistic();
 			double consortFA = currentConsort.calculateFightingAbilityLogistic();
 			double coalitionStrength = fa1 + fa2;
-			double consortStrength = consortFA * env.coalitionDefenseBonus;
-			double pDisruption = 1.0 / (1.0 + Math.exp(-env.coalitionWinBeta * (coalitionStrength - consortStrength)));
+			double consortStrength = consortFA;
+			
+			//we add pDisruption here, which is the probability the coalition successfully disrupts the consortship. Same is pWin in FA_LOGISTIC case
+			//but is used to calculate a more complex pWin below
+			double pDisruption = 1.0 / (1.0 + Math.exp(-state.coalitionWinBeta * (coalitionStrength - consortStrength)));
 			double strengthTotal = coalitionStrength + consortStrength;
+			
+			//the probability the consort male retains the female is consortStrength / strengthTotal if strength > 0.0, else it is just 0.5
 			double pRetain = strengthTotal > 0.0 ? consortStrength / strengthTotal : 0.5;
+			//probability coalition is successful 
 			outcome.pWin = pDisruption * (1.0 - pRetain);
-			outcome.disruptionOccurred = env.random.nextDouble() < pDisruption;
+			outcome.disruptionOccurred = state.random.nextDouble() < pDisruption;
 			if(outcome.disruptionOccurred)
 			{
-				outcome.consortRetainedFemale = env.random.nextDouble() < pRetain;
+				outcome.consortRetainedFemale = state.random.nextDouble() < pRetain;
 				outcome.coalitionSucceeded = !outcome.consortRetainedFemale;
 			}
 			else
@@ -452,16 +502,19 @@ public class Group implements Steppable
 			}
 			break;
 		}
+		
+		//default case is essentially the same as COIN_FLIP
 		default:
 			outcome.pWin = 0.5;
-			outcome.coalitionSucceeded = env.random.nextBoolean();
+			outcome.coalitionSucceeded = state.random.nextBoolean();
 			outcome.disruptionOccurred = outcome.coalitionSucceeded;
 			break;
 		}
-
+		
+		//if the coalition is successful, remove the determine new consort male, remove old consort, recordMating with new consort
 		if(outcome.coalitionSucceeded)
 		{
-			outcome.newConsort = chooseNewConsortAfterCoalitionWin(male1, male2, env);
+			outcome.newConsort = chooseNewConsortAfterCoalitionWin(male1, male2, state);
 			targetFemale.currentConsortMale = outcome.newConsort;
 			consortMales.remove(currentConsort);
 			consortMales.add(outcome.newConsort);
@@ -474,19 +527,19 @@ public class Group implements Steppable
 		return outcome;
 	}
 
-	private void applyAlternativeTactics(ChallengeOutcome outcome, Environment env)
+	private void applyAlternativeTactics(ChallengeOutcome outcome, Environment state)
 	{
 		if(outcome == null || outcome.targetFemale == null)
 		{
 			return;
 		}
 
-		switch(env.alternativeMode)
+		switch(state.alternativeMode)
 		{
 		case NONE:
 			return;
 		case SNEAKER:
-			if(!env.disruptionEnablesSneaking || !outcome.disruptionOccurred)
+			if(!state.disruptionEnablesSneaking || !outcome.disruptionOccurred)
 			{
 				return;
 			}
@@ -515,8 +568,8 @@ public class Group implements Steppable
 				return;
 			}
 
-			Baboon sneaker = sneakerMales.get(env.random.nextInt(sneakerMales.size()));
-			if(env.random.nextDouble() < env.sneakerSuccessProbability)
+			Baboon sneaker = sneakerMales.get(state.random.nextInt(sneakerMales.size()));
+			if(state.random.nextDouble() < state.sneakerSuccessProbability)
 			{
 				outcome.targetFemale.recordMating(sneaker);
 				outcome.sneakerMatingOccurred = true;
@@ -536,19 +589,6 @@ public class Group implements Steppable
 		return male2;
 	}
 
-	private static class ChallengeOutcome
-	{
-		boolean coalitionSucceeded;
-		boolean disruptionOccurred;
-		Baboon newConsort;
-		Baboon targetFemale;
-		Baboon oldConsort;
-		Baboon coalitionMale1;
-		Baboon coalitionMale2;
-		double pWin;
-		boolean consortRetainedFemale;
-		boolean sneakerMatingOccurred;
-	}
 //utility method for cost to fighting
 	public void applyFightingCost(Baboon male, double fightingCost)
 	{
