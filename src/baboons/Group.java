@@ -382,7 +382,7 @@ public class Group implements Steppable
 				pWin = 1.0 / (1.0 + Math.exp(-state.coalitionWinBeta * (coalitionStrength - consortStrength))); //logistic win function
 			}
 
-			double mortalityRisk = male.probMortalWoundCoalition;
+			double mortalityRisk = state.probMortalWoundCoalition;
 			double residualFitnessTerm = Math.max(0.0, 1.0 - ((double) male.age / Math.max(1.0, (double) male.maxAge))); //function that estimates future reproductive value remaining
 			
 			//formula that calculates the expected value of the coalition
@@ -520,10 +520,12 @@ public class Group implements Steppable
 			consortMales.add(outcome.newConsort);
 			targetFemale.recordMating(outcome.newConsort);
 		}
-
-		mortalWoundConsort(currentConsort);
-		mortalWoundCoalition(male1);
-		mortalWoundCoalition(male2);
+		
+		male1.lifetimeCoalitionTracker ++;
+		male2.lifetimeCoalitionTracker ++;
+		mortalWoundConsort(state, currentConsort);
+		mortalWoundCoalition(state, male1);
+		mortalWoundCoalition(state, male2);
 		return outcome;
 	}
 
@@ -596,9 +598,9 @@ public class Group implements Steppable
 		male.fightingAbility = Math.max(0, male.fightingAbility - fightingCost); 
 	}
 	
-	public void mortalWoundConsort(Baboon male)
+	public void mortalWoundConsort(Environment state, Baboon male)
 	{
-		double probMortalWound = male.probMortalWoundConsort;
+		double probMortalWound = state.probMortalWoundConsort;
 		
 		if(state.random.nextDouble() < probMortalWound)
 		{
@@ -606,9 +608,9 @@ public class Group implements Steppable
 		}
 	}
 	
-	public void mortalWoundCoalition(Baboon male)
+	public void mortalWoundCoalition(Environment state, Baboon male)
 	{
-		double probMortalWound = male.probMortalWoundCoalition;
+		double probMortalWound = state.probMortalWoundCoalition;
 		
 		if(state.random.nextDouble() < probMortalWound)
 		{

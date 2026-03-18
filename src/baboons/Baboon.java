@@ -46,8 +46,7 @@ public class Baboon implements Steppable
 	private static int nextID = 0;
 	public final int ID;
 	public Baboon mother;
-	double probMortalWoundConsort = 0.00;
-	double probMortalWoundCoalition = 0.02;
+	int lifetimeCoalitionTracker;
 	
 	
 	public Baboon(Environment state, boolean male, int x, int y, int initialAgeDays, boolean isJuvenile)
@@ -61,6 +60,7 @@ public class Baboon implements Steppable
 		this.hasCoalitionGene = false;
 		this.fatherHasCoalitionGene = false;
 		this.ID = nextID++;
+		this.lifetimeCoalitionTracker = 0;
 		
 		
 		//Draw agents max age from a normal distribution (mean = 9125 days (25 years), SD = 1825 days (+- 5 years))
@@ -152,6 +152,11 @@ public class Baboon implements Steppable
 		nextID = 0;
 		infantDied = 0;
 		infantSurvived = 0;
+	}
+	
+	public int getNumberOfCoalitions()
+	{
+		return lifetimeCoalitionTracker;
 	}
 	
 	// --- Reproduction Methods for Female Baboons ---

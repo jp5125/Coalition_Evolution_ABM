@@ -45,7 +45,9 @@ public class Environment extends SimStateSweep implements Steppable
 	public AlternativeMode alternativeMode = AlternativeMode.NONE;
 
 	//coalition parameters
-	public double coalitionWinBeta = 1.0;
+	double probMortalWoundConsort = 0.00;
+	double probMortalWoundCoalition = 0.02;
+	public double coalitionWinBeta = 1.0; 
 	public double coalitionDefenseBonus = 1.0;
 	public double coalitionFaThreshold = 0.5;
 	public int coalitionRankThreshold = 5;
@@ -368,24 +370,77 @@ public class Environment extends SimStateSweep implements Steppable
 		return groupCount;
 	}
 	
-	//Utility method for getting the current number of baboons in the simulation
-	public int getTotalPopulation()
+	//utility method for calculating the average number of coalitions an individual male 
+	public double calculateAverageNumberOfCoalitions() 
 	{
-		//returns 0 when MASON inspects getTotalPopulation before initialization, prevents nullPointerError
-		if(sparseSpace == null)
-		{
-			return 0;
-		}
+	    int sum = 0;
+	    int maleCount = 0;
+
+	    for (Object obj : sparseSpace.getAllObjects()) //for each group in the simulation
+	    {
+	        if (obj instanceof Group) 
+	        {
+	            Group g = (Group) obj; //assign said group to 'g'
+
+	            for (int i = 0; i < g.members.numObjs; i++) //for each agent in g
+	            {
+	                Baboon b = (Baboon) g.members.objs[i]; //cast each agent as a baboon object
+
+	                if (b.isMale() && !b.isJuvenile && b.hasCoalitionGene) //if that baboon object is male, an adult, and has the coalition gene
+	                {
+	                    sum += b.lifetimeCoalitionTracker; //extract the value of their lifetime coalition tracker attribute and add it to sum
+	                    maleCount++;
+	                }
+	            }
+	        }
+	    }
+
+	    if (maleCount == 0) //if there are no coalition males in the group
+	    {
+	        return 0.0; 
+	    }
+
+	    return (double) sum / maleCount; //otherwise, use the value of sum divided by male count to calculate the average number of coalitions males participate in
+	}
+	
+	public double calculateVarianceCorrectedCoalitionParticipation()
+	{
+		double sumOfCosts = 0.0;
+		int maleCount = 0;
+		double survivalLikelihood = (1 - probMortalWoundCoalition);
 		
-		int count = 0;
-		for(Object obj : sparseSpace.getAllObjects())
+		
+		
+		for(Object obj : sparseSpace.getAllObjects()) //for each group in the simulation
 		{
-			if(obj instanceof Group g)
+			if(obj instanceof Group)
 			{
-				count += g.members.numObjs;
+				Group g = (Group) obj;
+				
+				for(int i = 0; i < g.members.numObjs; i++) //for each agent within each group
+				{
+					Baboon b = (Baboon) g.members.objs[i];
+					
+					if(b.isMale() && !b.isJuvenile && b.hasCoalitionGene) //if the agent is an adult male with the coalition gene
+					{
+						double numCoalitions = b.getNumberOfCoalitions();
+						double result = Math.pow(survivalLikelihood, numCoalitions);
+						double expectedCost = 1 - result;
+						
+						sumOfCosts += expectedCost;
+						maleCount++;
+						
+					}
+				}
 			}
 		}
-		return count;
+		
+		if(maleCount == 0.0)
+		{
+			return 0.0;
+		}
+		
+		return sumOfCosts / maleCount;
 	}
 	
 	//utility method for printing model outputs to the console for the purpose of debugging BEFORE data collection
@@ -487,6 +542,10 @@ public class Environment extends SimStateSweep implements Steppable
 		System.out.printf("Max Group Size Observed: %d\n", maxGroupSizeObserved);
 		System.out.printf("Average Dominance Rank (Adult Males): %.2f\n", avgDominanceRank);
 		System.out.printf("Average Dominance Hierarchy Size (Adult Males per Group): %.2f\n", avgDominanceHierarchySize);
+		System.out.printf("Average number of coalitions males participate in: %.2f%n",
+                calculateAverageNumberOfCoalitions());
+		System.out.printf("Average number of coalitions males participate in, account for individual variation: %.2f%n",
+                calculateVarianceCorrectedCoalitionParticipation());
 		System.out.println(" ");
 	}
 	
