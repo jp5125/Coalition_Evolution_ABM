@@ -403,7 +403,7 @@ public class Environment extends SimStateSweep implements Steppable
 	    return (double) sum / maleCount; //otherwise, use the value of sum divided by male count to calculate the average number of coalitions males participate in
 	}
 	
-	public double calculateVarianceCorrectedCoalitionParticipation()
+	public double calculateVarianceCorrectedCoalitionParticipationCost()
 	{
 		double sumOfCosts = 0.0;
 		int maleCount = 0;
@@ -544,8 +544,8 @@ public class Environment extends SimStateSweep implements Steppable
 		System.out.printf("Average Dominance Hierarchy Size (Adult Males per Group): %.2f\n", avgDominanceHierarchySize);
 		System.out.printf("Average number of coalitions males participate in: %.2f%n",
                 calculateAverageNumberOfCoalitions());
-		System.out.printf("Average number of coalitions males participate in, account for individual variation: %.2f%n",
-                calculateVarianceCorrectedCoalitionParticipation());
+		System.out.printf("Average mortality risk males take by joining coalitions throughout their life, account for individual variation: %.2f%n",
+                calculateVarianceCorrectedCoalitionParticipationCost());
 		System.out.println(" ");
 	}
 	
