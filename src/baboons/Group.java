@@ -342,8 +342,9 @@ public class Group implements Steppable
 			
 			//initialize focal male and comparison variables
 			double maleFA = male.calculateFightingAbilityLogistic();
-			//we set partnerFA equal to maleFA so if no partner is found, the male will evaluate his singleton coalition strength as just his own FA
-			double partnerFA = maleFA;
+			
+			double partnerFASum = 0.0;
+			int partnerCount = 0;
 			double bestConsortFA = 0.0;
 
 			//scan through all group members
@@ -356,28 +357,38 @@ public class Group implements Steppable
 				}
 				
 				
-				//calculate each other male's FA, track the strongest male FA
+				//calculate each other male's FA
 				double otherFA = other.calculateFightingAbilityLogistic();
 				if(consortMales.contains(other))
 				{
 					bestConsortFA = Math.max(bestConsortFA, otherFA);
 				}
-				//find the strongest possible coalition partner
+				
 				else if(other != male)
 				{
 					boolean partnerEligibleByGene = !state.requireCoalitionGeneForStateDependentMode || other.hasCoalitionGene;
 					if(partnerEligibleByGene)
 					{
-						partnerFA = Math.max(partnerFA, otherFA);
+						partnerFASum += otherFA;
+						partnerCount++;
 					}
 				}
 			}
+			
+			// If no eligible partner exists, coalition cannot form
+		    if(partnerCount == 0)
+		    {
+		        return false;
+		    }
 
-			//estimate coalition success probability, default to 0.5 if no partner is found
+		    // Expected partner quality under random pairing
+		    double expectedPartnerFA = partnerFASum / partnerCount;
+
+			//estimate coalition success probability
 			double pWin = 0.5;
 			if(bestConsortFA > 0.0)
 			{
-				double coalitionStrength = maleFA + partnerFA;
+				double coalitionStrength = maleFA + expectedPartnerFA;
 				double consortStrength = bestConsortFA * state.coalitionDefenseBonus;
 				pWin = 1.0 / (1.0 + Math.exp(-state.coalitionWinBeta * (coalitionStrength - consortStrength))); //logistic win function
 			}
