@@ -13,6 +13,7 @@ import sim.util.gui.*;
 
 public class Experimenter extends Observer
 {
+	Environment state;
 	
 	//fields for tracking Coalition gene Carriers (CC)
 		public double ccPrime = 10;
@@ -148,6 +149,29 @@ public class Experimenter extends Observer
 				
 	}
 	*/
+	
+	public boolean nextInterval()
+	{
+		if(!state.paramSweeps)
+		{
+			return false;
+		}
+		data.add(state.coalitionGeneCount); //total number of males with the coalition gene
+		data.add(state.coalitionGeneFreq); //proportion of males with the coalition gene out of all males (coalition gene and no coalition gene)
+		data.add(state.totalBaboons); //total number of baboons in the simulation
+		data.add(state.juvenileCount); //total number of juvenile baboons in the sim
+		data.add(state.adultMaleCount); //total number of adult males in the sim
+		data.add(state.adultFemaleCount); //total number of adult females in the sim
+		data.add(state.avgFightingAbility); //the average fighting ability value across all populations
+		data.add(state.avgDominanceRank); //average dominance rank across all populations
+		data.add(state.avgDominanceHierarchySize); //average size of a dominance hierarchy across all populations
+		data.add(state.avgCoalitionsPerMale); //average number of coalitions males participate in throughout their lives
+		data.add(state.avgCoalitionParticipationCost); //the average mortality probability any given male has across their lifetime (from coalition participation)
+		
+		
+		
+		return false;
+	}
 	
 	public void step(SimState state)
 	{

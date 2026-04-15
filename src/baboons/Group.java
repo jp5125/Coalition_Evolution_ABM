@@ -23,11 +23,7 @@ public class Group implements Steppable
 	ArrayList <Baboon> consortMales = new ArrayList<>();
 	Bag coalitionMales = new Bag();
 	
-	double cost = 0.01; //fighting ability cost for participating in a fight
-	
-	
-
-	
+	//group constructor
 	public Group(Environment state, int x, int y, Bag members)
 	{
 		super();
@@ -605,7 +601,7 @@ public class Group implements Steppable
 //utility method for cost to fighting
 	public void applyFightingCost(Baboon male, double fightingCost)
 	{
-		fightingCost = cost; 
+		fightingCost = state.cost; 
 		male.fightingAbility = Math.max(0, male.fightingAbility - fightingCost); 
 	}
 	

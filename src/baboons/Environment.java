@@ -25,6 +25,8 @@ public class Environment extends SimStateSweep implements Steppable
 		NONE,
 		SNEAKER
 	}
+	
+	
 
 	//population variables
 	public int n =10000; //number of baboons at simulation start
@@ -45,8 +47,9 @@ public class Environment extends SimStateSweep implements Steppable
 	public AlternativeMode alternativeMode = AlternativeMode.NONE;
 
 	//coalition parameters
-	double probMortalWoundConsort = 0.00;
-	double probMortalWoundCoalition = 0.02;
+	public double probMortalWoundConsort = 0.00;
+	public double probMortalWoundCoalition = 0.01;
+	public double cost = 0.01; //fighting ability cost for participating in a fight
 	public double coalitionWinBeta = 1.0; 
 	public double coalitionDefenseBonus = 1.0;
 	public double coalitionFaThreshold = 0.5;
@@ -59,14 +62,39 @@ public class Environment extends SimStateSweep implements Steppable
 	public double sneakerSuccessProbability = 0.1;
 	public boolean disruptionEnablesSneaking = true;
 	
+	//coalition measurments
+	public double avgCoalitionsPerMale = 0.0;
+	public double avgCoalitionParticipationCost = 0.0;
+	
 	//age variables
 	public double averageAge; 
 	
 	//references for data collection
 	public static Bag deadMales = new Bag();
-	int malesWithGene = 0;
-	int malesWithoutGene = 0;
+	public int malesWithGene = 0;
+	public int malesWithoutGene = 0;
 	public Experimenter experimenter;
+	
+	//population summary state variables
+
+	public int totalBaboons = 0;
+	public int juvenileCount = 0;
+	public int adultMaleCount = 0;
+	public int adultFemaleCount = 0;
+	public int coalitionGeneCount = 0;
+	
+	//derived summary state variables
+	public int totalAdults = 0;
+	public double avgFightingAbility = 0.0;
+	public double coalitionGeneFreq = 0.0;
+	public double avgDominanceRank = 0.0;
+	public double avgDominanceHierarchySize = 0.0;
+	
+	//other summary state variables
+	public int maxDominanceRank = 0;
+	public int maxGroupSizeObserved = 0;
+	public long summaryStep = 0;
+	
 	
 	//getters and setters
 	
@@ -126,6 +154,22 @@ public class Environment extends SimStateSweep implements Steppable
 	public void setMigrationMortalityRate(double rate)
 	{
 		this.migrationMortalityRate = rate;
+	}
+	
+	public double getProbMortalWoundCoalition() {
+		return probMortalWoundCoalition;
+	}
+
+	public void setProbMortalWoundCoalition(double probMortalWoundCoalition) {
+		this.probMortalWoundCoalition = probMortalWoundCoalition;
+	}
+	
+	public double getCost() {
+		return cost;
+	}
+
+	public void setCost(double cost) {
+		this.cost = cost;
 	}
 	
 	//methods for environment
@@ -443,98 +487,112 @@ public class Environment extends SimStateSweep implements Steppable
 		return sumOfCosts / maleCount;
 	}
 	
-	//utility method for printing model outputs to the console for the purpose of debugging BEFORE data collection
-	public void printDebugSummary()
+	public void updateDebugSummaryStats()
 	{
-		int totalBaboons = 0;
-		int juvenileCount = 0;
-		int adultMaleCount = 0;
-		int adultFemaleCount = 0;
-		int coalitionGeneCount = 0;
-		double totalFightingAbility = 0.0;
-		int maxDominanceRank = 0;
-		int maxGroupSizeObserved = 0;
-		int totalDominanceRank = 0;
-		int totalDominanceHierarchySize = 0;  // sum of adult males per group
-		int groupCount = 0;                   // number of groups
-		
-		for(Object obj : sparseSpace.getAllObjects())
-		{
-			if(obj instanceof Group group)
-			{
-				groupCount++;
-				
-				int groupAdultMales = 0;
-				for (int i = 0; i < group.members.numObjs; i++)
-				{
-					Baboon b = (Baboon) group.members.objs[i];
-					if (b.isMale() && !b.isJuvenile)
-					{
-						groupAdultMales++;
-					}
-				}
-				totalDominanceHierarchySize += groupAdultMales;
-				
-				
-				if (group.members.numObjs > maxGroupSizeObserved)
+		totalBaboons = 0;
+	    juvenileCount = 0;
+	    adultMaleCount = 0;
+	    adultFemaleCount = 0;
+	    coalitionGeneCount = 0;
+
+	    double totalFightingAbility = 0.0;
+	    maxDominanceRank = 0;
+	    maxGroupSizeObserved = 0;
+	    int totalDominanceRank = 0;
+	    int totalDominanceHierarchySize = 0;
+	    int groupCount = 0;
+	    
+	    for (Object obj : sparseSpace.getAllObjects())
+	    {
+	        if (obj instanceof Group group)
+	        {
+	            groupCount++;
+
+	            int groupAdultMales = 0;
+	            for (int i = 0; i < group.members.numObjs; i++)
+	            {
+	                Baboon b = (Baboon) group.members.objs[i];
+	                if (b.isMale() && !b.isJuvenile)
+	                {
+	                    groupAdultMales++;
+	                }
+	            }
+	            totalDominanceHierarchySize += groupAdultMales;
+
+	            if (group.members.numObjs > maxGroupSizeObserved)
 	            {
 	                maxGroupSizeObserved = group.members.numObjs;
 	            }
-				
-				HashSet<Integer> seenRanks = new HashSet<>();
-				
-				for(int i = 0; i < group.members.numObjs; i++)
-				{
-					Baboon b = (Baboon) group.members.objs[i];
-					totalBaboons++;
-					
-					if(b.isJuvenile)
-					{
-						juvenileCount++;
-					}
-					
-					if(b.isMale() && !b.isJuvenile)
-					{
-						adultMaleCount++;
-						totalFightingAbility += b.fightingAbility;
-						totalDominanceRank += b.dominanceRank;
-						
-						if(b.hasCoalitionGene)
-						{
-							coalitionGeneCount++;
-						}
-						if(b.dominanceRank > group.members.numObjs) //to check for error where individuals have rank greater than group size
-						{
-							System.out.println("Baboon ID " + b.ID + " has INVALID rank " + b.dominanceRank +
-									" (group size: " + group.members.numObjs + ")");
-						}
-						if(!seenRanks.add(b.dominanceRank)) //ensure no duplicate ranks
-						{
-							System.out.println("Duplicate rank " + b.dominanceRank + " found (Baboon ID " + b.ID + ")");
-						}
-						if(b.dominanceRank > maxDominanceRank)
-						{
-							maxDominanceRank = b.dominanceRank;
-						}
-					} 
-					if(!b.isMale() && !b.isJuvenile)
-					{
-						adultFemaleCount++;
-						
-					}
-				}
-			}
-		}
+
+	            HashSet<Integer> seenRanks = new HashSet<>();
+
+	            for (int i = 0; i < group.members.numObjs; i++)
+	            {
+	                Baboon b = (Baboon) group.members.objs[i];
+	                totalBaboons++;
+
+	                if (b.isJuvenile)
+	                {
+	                    juvenileCount++;
+	                }
+
+	                if (b.isMale() && !b.isJuvenile)
+	                {
+	                    adultMaleCount++;
+	                    totalFightingAbility += b.fightingAbility;
+	                    totalDominanceRank += b.dominanceRank;
+
+	                    if (b.hasCoalitionGene)
+	                    {
+	                        coalitionGeneCount++;
+	                    }
+
+	                    if (b.dominanceRank > group.members.numObjs)
+	                    {
+	                        System.out.println("Baboon ID " + b.ID + " has INVALID rank " + b.dominanceRank +
+	                                " (group size: " + group.members.numObjs + ")");
+	                    }
+
+	                    if (!seenRanks.add(b.dominanceRank))
+	                    {
+	                        System.out.println("Duplicate rank " + b.dominanceRank + " found (Baboon ID " + b.ID + ")");
+	                    }
+
+	                    if (b.dominanceRank > maxDominanceRank)
+	                    {
+	                        maxDominanceRank = b.dominanceRank;
+	                    }
+	                }
+
+	                if (!b.isMale() && !b.isJuvenile)
+	                {
+	                    adultFemaleCount++;
+	                }
+	            }
+	        }
+	    }
+
+	    totalAdults = adultMaleCount + adultFemaleCount;
+	    avgFightingAbility = adultMaleCount > 0 ? totalFightingAbility / adultMaleCount : 0.0;
+	    coalitionGeneFreq = adultMaleCount > 0 ? (double) coalitionGeneCount / adultMaleCount : 0.0;
+	    avgDominanceRank = adultMaleCount > 0 ? (double) totalDominanceRank / adultMaleCount : 0.0;
+	    avgDominanceHierarchySize = groupCount > 0 ? (double) totalDominanceHierarchySize / groupCount : 0.0;
+	    avgCoalitionsPerMale = calculateAverageNumberOfCoalitions();
+	    avgCoalitionParticipationCost = calculateVarianceCorrectedCoalitionParticipationCost();
+	    summaryStep = schedule.getSteps();
+	}
+	
+	//utility method for printing model outputs to the console for the purpose of debugging BEFORE data collection
+	public void printDebugSummary()
+	{
 		
-		int totalAdults = adultMaleCount + adultFemaleCount;
-		double avgFightingAbility = adultMaleCount > 0 ? totalFightingAbility / adultMaleCount : 0.0;
-		double coalitionGeneFreq = adultMaleCount > 0 ? (double) coalitionGeneCount / adultMaleCount : 0.0;
-		double avgDominanceRank = adultMaleCount > 0 ? (double) totalDominanceRank / adultMaleCount : 0.0;
-		double avgDominanceHierarchySize = groupCount > 0 ? (double) totalDominanceHierarchySize / groupCount : 0.0;
+		
+		updateDebugSummaryStats();
+		
 		
 		System.out.printf(
 				"[Step %d] Total: %d | Adults: %d | Juveniles: %d | Males: %d | Females: %d | Coalition Gene: %d (%.2f%%) | Avg FA: %.3f\n",
-		        schedule.getSteps(), totalBaboons, totalAdults, juvenileCount, adultMaleCount, adultFemaleCount,
+		        summaryStep, totalBaboons, totalAdults, juvenileCount, adultMaleCount, adultFemaleCount,
 		        coalitionGeneCount, coalitionGeneFreq * 100, avgFightingAbility
 		    );
 		
@@ -542,10 +600,9 @@ public class Environment extends SimStateSweep implements Steppable
 		System.out.printf("Max Group Size Observed: %d\n", maxGroupSizeObserved);
 		System.out.printf("Average Dominance Rank (Adult Males): %.2f\n", avgDominanceRank);
 		System.out.printf("Average Dominance Hierarchy Size (Adult Males per Group): %.2f\n", avgDominanceHierarchySize);
-		System.out.printf("Average number of coalitions males participate in: %.2f%n",
-                calculateAverageNumberOfCoalitions());
-		System.out.printf("Average mortality risk males take by joining coalitions throughout their life, account for individual variation: %.2f%n",
-                calculateVarianceCorrectedCoalitionParticipationCost());
+		System.out.printf("Average number of coalitions males participate in: %.2f%n", avgCoalitionsPerMale);
+		System.out.printf("Average mortality risk males take by joining coalitions throughout their life, account for individual variation: %.2f%n", 
+				avgCoalitionParticipationCost);
 		System.out.println(" ");
 	}
 	
@@ -575,6 +632,7 @@ public class Environment extends SimStateSweep implements Steppable
 	
 		if(schedule.getSteps() % 100 == 0)
 		{
+			updateDebugSummaryStats();
 			printDebugSummary();
 		}
 		
