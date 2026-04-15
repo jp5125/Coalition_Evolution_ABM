@@ -26,8 +26,6 @@ public class Environment extends SimStateSweep implements Steppable
 		SNEAKER
 	}
 	
-	
-
 	//population variables
 	public int n =10000; //number of baboons at simulation start
 	public int groups = 175; //number of groups at simulation start
@@ -94,6 +92,49 @@ public class Environment extends SimStateSweep implements Steppable
 	public int maxDominanceRank = 0;
 	public int maxGroupSizeObserved = 0;
 	public long summaryStep = 0;
+	
+	//genotype specific current-population summaries
+	public int coalitionMaleDeaths = 0;
+	public int nonCoalitionMaleDeaths = 0;
+	public double coalitionMaleLifetimeOffspringSum = 0.0;
+	public double nonCoalitionMaleLifetimeOffspringSum = 0.0;
+	
+	public double coalitionPrimeOffspringSum = 0.0;
+	public double coalitionPostPrimeOffspringSum = 0.0;
+	public double coalitionSenescentOffspringSum = 0.0;
+	
+	public double nonCoalitionPrimeOffspringSum = 0.0;
+	public double nonCoalitionPostPrimeOffspringSum = 0.0;
+	public double nonCoalitionSenescentOffspringSum = 0.0;
+	
+	public double coalitionMaleLifespanSum = 0.0;
+	public double nonCoalitionMaleLifespanSum = 0.0;
+	
+	//derived lifetime means for sweeps
+	public double meanLifetimeOffspringCoalitionMales = 0.0;
+	public double meanLifetimeOffspringNonCoalitionMales = 0.0;
+	
+	public double avgOffspringPrimeCoalitionMales = 0.0;
+	public double avgOffspringPostPrimeCoalitionMales = 0.0;
+	public double avgOffspringSenescentCoaltiionMales = 0.0;
+	
+	public double avgOffspringPrimeNonCoalitionMales = 0.0;
+	public double avgOffspringPostPrimeNonCoalitionMales = 0.0;
+	public double avgOffspringSenescentCoalitionMales = 0.0;
+	
+	public double avgLifespanCoalitionMale = 0.0;
+	public double avgLifespanNonCoalitionMale = 0.0;
+	
+	//current population level, genotype specific summaries
+	public int livingCoalitionMales = 0;
+	public int livingNonCoalitionMales = 0;
+
+	public double avgDominanceRankCoalitionMales = 0.0;
+	public double avgDominanceRankNonCoalitionMales = 0.0;
+
+	public double avgFightingAbilityCoalitionMales = 0.0;
+	public double avgFightingAbilityNonCoalitionMales = 0.0;
+	
 	
 	
 	//getters and setters
@@ -178,7 +219,6 @@ public class Environment extends SimStateSweep implements Steppable
 		super(seed, observer);
 		
 	}
-	
 	
 	// Method to make groups upon simulation initialization
 	public void makeGroups()
@@ -329,6 +369,7 @@ public class Environment extends SimStateSweep implements Steppable
 		}
 		
 	}
+	
 	
 	//utility method for finding nearest group in simulation. Used by Group.groupDisperse() and Baboon.maleImmigration()
 	public Group findGroupNearest(int x, int y, int mode)
