@@ -13,7 +13,6 @@ import sim.util.gui.*;
 
 public class Experimenter extends Observer
 {
-	Environment state;
 	
 	//fields for tracking Coalition gene Carriers (CC)
 		public double ccPrime = 10;
@@ -150,12 +149,14 @@ public class Experimenter extends Observer
 	}
 	*/
 	
-	public boolean nextInterval()
+	public boolean nextInterval(Environment state)
 	{
 		if(!state.paramSweeps)
 		{
 			return false;
 		}
+		state.updateDebugSummaryStats();
+		
 		data.add(state.coalitionGeneCount); //total number of males with the coalition gene
 		data.add(state.coalitionGeneFreq); //proportion of males with the coalition gene out of all males (coalition gene and no coalition gene)
 		data.add(state.totalBaboons); //total number of baboons in the simulation
@@ -168,6 +169,30 @@ public class Experimenter extends Observer
 		data.add(state.avgCoalitionsPerMale); //average number of coalitions males participate in throughout their lives
 		data.add(state.avgCoalitionParticipationCost); //the average mortality probability any given male has across their lifetime (from coalition participation)
 		
+		data.add(state.meanLifetimeOffspringCoalitionMales); //average lifetime offspring of coalition males
+		data.add(state.meanLifetimeOffspringNonCoalitionMales); //average lifetime offspring of non coalition males
+		
+		//average offspring being sired by males of each age class w/ the coaliton gene
+		data.add(state.avgOffspringPrimeCoalitionMales);
+		data.add(state.avgOffspringPostPrimeCoalitionMales);
+		data.add(state.avgOffspringSenescentCoalitionMales);
+		
+		//average offspring being sired by males of each age class w/o the coalition gene
+		data.add(state.avgOffspringPrimeNonCoalitionMales);
+		data.add(state.avgOffspringPostPrimeNonCoalitionMales);
+		data.add(state.avgOffspringSenescentNonCoalitionMales);
+
+		//average lifespan of coalition and non coalition males
+		data.add(state.avgLifespanCoalitionMales);
+		data.add(state.avgLifespanNonCoalitionMales);
+
+		//average dominance rank of coalition and non coalition males
+		data.add(state.avgDominanceRankCoalitionMales);
+		data.add(state.avgDominanceRankNonCoalitionMales);
+		
+		//average fighting ability of coalition and non coalition males
+		data.add(state.avgFightingAbilityCoalitionMales);
+		data.add(state.avgFightingAbilityNonCoalitionMales);
 		
 		
 		return false;

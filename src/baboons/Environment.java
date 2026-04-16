@@ -116,14 +116,14 @@ public class Environment extends SimStateSweep implements Steppable
 	
 	public double avgOffspringPrimeCoalitionMales = 0.0;
 	public double avgOffspringPostPrimeCoalitionMales = 0.0;
-	public double avgOffspringSenescentCoaltiionMales = 0.0;
+	public double avgOffspringSenescentCoalitionMales = 0.0;
 	
 	public double avgOffspringPrimeNonCoalitionMales = 0.0;
 	public double avgOffspringPostPrimeNonCoalitionMales = 0.0;
-	public double avgOffspringSenescentCoalitionMales = 0.0;
+	public double avgOffspringSenescentNonCoalitionMales = 0.0;
 	
-	public double avgLifespanCoalitionMale = 0.0;
-	public double avgLifespanNonCoalitionMale = 0.0;
+	public double avgLifespanCoalitionMales = 0.0;
+	public double avgLifespanNonCoalitionMales = 0.0;
 	
 	//current population level, genotype specific summaries
 	public int livingCoalitionMales = 0;
@@ -528,6 +528,94 @@ public class Environment extends SimStateSweep implements Steppable
 		return sumOfCosts / maleCount;
 	}
 	
+	//utility method to reset fields for genotype specific data collection after completion of a parameter sweep
+	public void resetSweepDataFields()
+	{
+		coalitionMaleDeaths = 0;
+		nonCoalitionMaleDeaths = 0;
+		
+		coalitionMaleLifetimeOffspringSum = 0.0;
+		nonCoalitionMaleLifetimeOffspringSum = 0.0;
+		
+		coalitionPrimeOffspringSum = 0;
+		coalitionPostPrimeOffspringSum = 0;
+		coalitionSenescentOffspringSum = 0;
+		
+		nonCoalitionPrimeOffspringSum = 0;
+		nonCoalitionPostPrimeOffspringSum = 0;
+		nonCoalitionSenescentOffspringSum = 0;
+		
+		coalitionMaleLifespanSum = 0.0;
+		nonCoalitionMaleLifespanSum = 0.0;
+		
+		meanLifetimeOffspringCoalitionMales = 0.0;
+		meanLifetimeOffspringNonCoalitionMales = 0.0;
+		
+		avgOffspringPrimeCoalitionMales = 0.0;
+		avgOffspringPostPrimeCoalitionMales = 0.0;
+		avgOffspringSenescentCoalitionMales = 0.0;
+		
+		avgOffspringPrimeNonCoalitionMales = 0.0;
+		avgOffspringPostPrimeNonCoalitionMales = 0.0;
+		avgOffspringSenescentNonCoalitionMales = 0.0;
+		
+		avgLifespanCoalitionMales = 0.0;
+		avgLifespanNonCoalitionMales = 0.0;
+		
+		livingCoalitionMales = 0;
+		livingNonCoalitionMales = 0;
+		
+		avgDominanceRankCoalitionMales = 0.0;
+		avgDominanceRankNonCoalitionMales = 0.0;
+		avgFightingAbilityCoalitionMales = 0.0;
+		avgFightingAbilityNonCoalitionMales = 0.0;
+		
+	}
+	
+	public void recordDeadMaleStats(Baboon male)
+	{
+		if(male == null || !male.isMale() || male.isJuvenile) return;
+		
+		if(male.hasCoalitionGene)
+		{
+			coalitionMaleDeaths++;
+			coalitionMaleLifetimeOffspringSum += male.offspringCount;
+			coalitionPrimeOffspringSum += male.primeOffspring;
+			coalitionPostPrimeOffspringSum += male.postPrimeOffspring;
+			coalitionSenescentOffspringSum += male.senescentOffspring;
+		}
+		else
+		{
+			nonCoalitionMaleDeaths++;
+			nonCoalitionMaleLifetimeOffspringSum += male.offspringCount;
+			nonCoalitionPrimeOffspringSum += male.primeOffspring;
+			nonCoalitionPostPrimeOffspringSum += male.postPrimeOffspring;
+			nonCoalitionSenescentOffspringSum += male.senescentOffspring;
+		}
+		
+		updateDeadMaleDerivedMeans();
+		
+	}
+	
+	public void updateDeadMaleDerivedMeans()
+	{
+		meanLifetimeOffspringCoalitionMales = coalitionMaleDeaths > 0 ? coalitionMaleLifetimeOffspringSum / coalitionMaleDeaths : 0.0;
+		
+		meanLifetimeOffspringNonCoalitionMales = nonCoalitionMaleDeaths > 0 ? nonCoalitionMaleLifetimeOffspringSum / nonCoalitionMaleDeaths : 0.0;
+		
+		avgOffspringPrimeCoalitionMales = coalitionMaleDeaths > 0 ? coalitionPrimeOffspringSum / coalitionMaleDeaths : 0.0;
+		avgOffspringPostPrimeCoalitionMales = coalitionMaleDeaths > 0 ? coalitionPostPrimeOffspringSum / coalitionMaleDeaths : 0.0;
+		avgOffspringSenescentCoalitionMales = coalitionMaleDeaths > 0 ? coalitionSenescentOffspringSum / coalitionMaleDeaths : 0.0;
+		
+		avgOffspringPrimeNonCoalitionMales = nonCoalitionMaleDeaths > 0 ? nonCoalitionPrimeOffspringSum / nonCoalitionMaleDeaths : 0.0;
+		avgOffspringPostPrimeNonCoalitionMales = nonCoalitionMaleDeaths > 0 ? nonCoalitionPostPrimeOffspringSum / nonCoalitionMaleDeaths : 0.0;
+		avgOffspringSenescentNonCoalitionMales = nonCoalitionMaleDeaths > 0 ? nonCoalitionSenescentOffspringSum / nonCoalitionMaleDeaths : 0.0;
+		
+		avgLifespanCoalitionMales = coalitionMaleDeaths > 0 ? coalitionMaleLifespanSum / coalitionMaleDeaths : 0.0;
+		avgLifespanNonCoalitionMales = nonCoalitionMaleDeaths > 0 ? nonCoalitionMaleLifespanSum / nonCoalitionMaleDeaths : 0.0;
+	}
+	
+	
 	public void updateDebugSummaryStats()
 	{
 		totalBaboons = 0;
@@ -542,6 +630,15 @@ public class Environment extends SimStateSweep implements Steppable
 	    int totalDominanceRank = 0;
 	    int totalDominanceHierarchySize = 0;
 	    int groupCount = 0;
+	    
+	    //additional accumulators for data pipeline
+	    double coalitionRankSum = 0.0;
+	    double nonCoalitionRankSum = 0.0;
+	    double coalitionFASum = 0.0;
+	    double nonCoalitionFASum = 0.0;
+	    
+	    livingCoalitionMales = 0;
+	    livingNonCoalitionMales = 0;
 	    
 	    for (Object obj : sparseSpace.getAllObjects())
 	    {
@@ -586,7 +683,16 @@ public class Environment extends SimStateSweep implements Steppable
 	                    if (b.hasCoalitionGene)
 	                    {
 	                        coalitionGeneCount++;
+	                        livingCoalitionMales++;
+	                        coalitionRankSum += b.dominanceRank;
+	                        coalitionFASum += b.fightingAbility;
 	                    }
+	                    	else
+	                    	{
+	                    	livingNonCoalitionMales++;
+	                    	nonCoalitionRankSum += b.dominanceRank;
+	                    	nonCoalitionFASum += b.fightingAbility;
+	                    	}
 
 	                    if (b.dominanceRank > group.members.numObjs)
 	                    {
@@ -621,6 +727,18 @@ public class Environment extends SimStateSweep implements Steppable
 	    avgCoalitionsPerMale = calculateAverageNumberOfCoalitions();
 	    avgCoalitionParticipationCost = calculateVarianceCorrectedCoalitionParticipationCost();
 	    summaryStep = schedule.getSteps();
+	    
+	    avgDominanceRankCoalitionMales =
+	            livingCoalitionMales > 0 ? coalitionRankSum / livingCoalitionMales : 0.0;
+
+	    avgDominanceRankNonCoalitionMales =
+	            livingNonCoalitionMales > 0 ? nonCoalitionRankSum / livingNonCoalitionMales : 0.0;
+
+	    avgFightingAbilityCoalitionMales =
+	            livingCoalitionMales > 0 ? coalitionFASum / livingCoalitionMales : 0.0;
+
+	    avgFightingAbilityNonCoalitionMales =
+	            livingNonCoalitionMales > 0 ? nonCoalitionFASum / livingNonCoalitionMales : 0.0;
 	}
 	
 	//utility method for printing model outputs to the console for the purpose of debugging BEFORE data collection
@@ -652,6 +770,7 @@ public class Environment extends SimStateSweep implements Steppable
 		super.start();
 		deadMales.clear();
 		Baboon.resetRunState();
+		resetSweepDataFields();
 		spaces = Spaces.SPARSE; //set the space
 		make2DSpace(spaces, gridWidth, gridHeight);//make the space
 		makeGroups(); //create the groups

@@ -100,9 +100,7 @@ public class Baboon implements Steppable
 		{
 			state.deadMales.add(this); //track dead adult males for probe
 			if(state.experimenter != null)
-			{
-				state.experimenter.maleOffspringByStrategy(this);
-			}
+			state.recordDeadMaleStats(this);
 		}
 		
 		if(group != null && group.members != null)
