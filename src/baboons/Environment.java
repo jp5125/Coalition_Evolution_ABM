@@ -583,6 +583,8 @@ public class Environment extends SimStateSweep implements Steppable
 			coalitionPrimeOffspringSum += male.primeOffspring;
 			coalitionPostPrimeOffspringSum += male.postPrimeOffspring;
 			coalitionSenescentOffspringSum += male.senescentOffspring;
+			
+			coalitionMaleLifespanSum += male.age;
 		}
 		else
 		{
@@ -591,6 +593,8 @@ public class Environment extends SimStateSweep implements Steppable
 			nonCoalitionPrimeOffspringSum += male.primeOffspring;
 			nonCoalitionPostPrimeOffspringSum += male.postPrimeOffspring;
 			nonCoalitionSenescentOffspringSum += male.senescentOffspring;
+			
+			nonCoalitionMaleLifespanSum += male.age;
 		}
 		
 		updateDeadMaleDerivedMeans();
