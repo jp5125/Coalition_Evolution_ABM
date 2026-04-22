@@ -203,6 +203,7 @@ public class Experimenter extends Observer
 		super.step(state);
 		if(step % this.state.dataSamplingInterval == 0)
 		{
+			nextInterval((Environment) state);
 			double time = state.schedule.getTime();
 			
 			numberOfCoalitionMales((Environment) state, time);
