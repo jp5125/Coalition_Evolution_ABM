@@ -15,16 +15,16 @@ public class Experimenter extends Observer
 {
 	
 	//fields for tracking Coalition gene Carriers (CC)
-		public double ccPrime = 10;
-		public double ccPostPrime = 10;
-		public double ccSenescent = 10;
-		public double ccN = 30; //number of dead coalition gene males
+		public double ccPrime = 0;
+		public double ccPostPrime = 0;
+		public double ccSenescent = 0;
+		public double ccN = 0; //number of dead coalition gene males
 		
 		//fields for tracking Non-Carriers of coalition gene (NG)
-		public double ncPrime = 5;
-		public double ncPostPrime = 5;
-		public double ncSenescent = 5;
-		public double ncN = 15; //number of dead non-coalition gene males
+		public double ncPrime = 0;
+		public double ncPostPrime = 0;
+		public double ncSenescent = 0;
+		public double ncN = 0; //number of dead non-coalition gene males
 		
 		public BarChartGenerator reproductiveBarChart; 
 		
