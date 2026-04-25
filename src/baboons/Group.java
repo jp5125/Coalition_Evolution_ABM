@@ -172,6 +172,11 @@ public class Group implements Steppable
 		//Clear previous lists
 		fertileFemales.clear();
 		consortMales.clear();
+		
+		//temporary tracking sets for only 1 challenge per timestep 
+		HashSet<Baboon> malesAlreadyUsedThisStep = new HashSet<>();
+		HashSet<Baboon> femalesAlreadyChallengedThisStep = new HashSet<>();
+		
 
 		//Identify fertile females in the group
 		ArrayList<Baboon> sortedFemales = new ArrayList<>(); //create an empty ArrayList to store fertile females in
@@ -256,12 +261,62 @@ public class Group implements Steppable
 		for(ArrayList<Baboon> coalition : coalitions)
 		{
 			if(fertileFemales.isEmpty()) continue;
-			Baboon targetFemale = fertileFemales.get(state.random.nextInt(fertileFemales.size()));
-			Baboon currentConsort = targetFemale.currentConsortMale;
+			
 			Baboon male1 = coalition.get(0);
 			Baboon male2 = coalition.get(1);
+			
+			/*
+			 * The logic here allows for oneChallengePerTimestep to be switched on and off, and 
+			 * depending on the state of oneChallengePerTimestep, different logic will run
+			 */
+			if(state.oneChallengePerTimestep == true && (malesAlreadyUsedThisStep.contains(male1) || malesAlreadyUsedThisStep.contains(male2))) 
+			{
+				continue;
+			}
+			
+			Baboon targetFemale = null;
+			
+			if(state.oneChallengePerTimestep)
+			{
+				ArrayList<Baboon> availableFemales = new ArrayList<>();
+				
+				for(Baboon female : fertileFemales)
+				{
+					if(!femalesAlreadyChallengedThisStep.contains(female))
+					{
+						availableFemales.add(female);
+					}
+				}
+				
+				/*
+				 * when oneChallengePerTimestep == true, If every fertile female has been challenged this timestep
+				 * then this coalition does not get a target
+				 */
+				if(availableFemales.isEmpty())
+				{
+					continue;
+				}
+				
+				targetFemale = availableFemales.get(state.random.nextInt(availableFemales.size()));
+			}
+			else //original logic 
+			{
+				targetFemale = fertileFemales.get(state.random.nextInt(fertileFemales.size()));
+			}
+			
+			Baboon currentConsort = targetFemale.currentConsortMale;
+			
 			ChallengeOutcome outcome = resolveCoalitionChallenge(male1, male2, targetFemale, currentConsort, state);
 			applyAlternativeTactics(outcome, state);
+			
+			//when oneChallenge is switched on, mark males and females as used
+			if(state.oneChallengePerTimestep == true)
+			{
+				femalesAlreadyChallengedThisStep.add(targetFemale);
+				malesAlreadyUsedThisStep.add(male1);
+				malesAlreadyUsedThisStep.add(male2);
+				
+			}
 		}
 
 		//per-day mating record updating, ensures males who are consorts for multiple days in a row get more than 1 mating record for their consortship

@@ -1,0 +1,106 @@
+/* This script allows the user to perform parameter sweep of up to 3 parameters in a simulation
+session. To sweep a parameter for two or more values, simply list the values after the parameter
+as illustrated below:
+
+public double x = 2, 3.1, 4.2, 5;
+
+As mentioned aboveUp to 3 parameters can be swept in a single session, e.g.:
+
+public double x = 2.7, 3.1;
+public int y = 1, 2, 3;
+public boolean z = true, false;
+
+An x X y X z Cartisian crossproduct table is generated for conducting the parameter sweep:
+
+public double x = 2.7,  2.7,  2.7,  2.7,  2.7,  2,7,  3.1,  3.1,  3.1,  3.1,  3.1,  3.1;
+public int y =    1,    1,    2,    2,    3,    3,    1,    1,    2,    2,    3,    3;
+public boolean z =true, false,true, false,true, false,true, false,true, false,true, false;
+
+The table is generated from the first three parameters encountered with more than one value.
+After 3 parameters are encountered with more than one value, subsequent parameters with more than
+one value are ignored.*/
+
+
+public boolean oneChallengePerTimestep = true;
+public int n = 10000;
+public int groups = 175;
+public int minGroups = 20;
+public int minGroupSize = 12;
+public int maxGroupSize = 125;
+public int maxPopulation = 25000;
+public double initialCoalitionFrequency = 0.01;
+public double mutationRate = 0.01;
+public double migrationMortalityRate = 0.3;
+public double probMortalWoundConsort = 0.0;
+public double probMortalWoundCoalition = 0.01;
+public double cost = 0.01;
+public double coalitionWinBeta = 1.0;
+public double coalitionDefenseBonus = 1.0;
+public double coalitionFaThreshold = 0.5;
+public int coalitionRankThreshold = 5;
+public boolean requireCoalitionGeneForStateDependentMode = true;
+public double coalitionBenefit = 1.0;
+public double coalitionChallengeCost = 0.0;
+public double baselineMatingBenefit = 0.0;
+public double futureFitnessWeight = 1.0;
+public double sneakerSuccessProbability = 0.1;
+public boolean disruptionEnablesSneaking = true;
+public double avgCoalitionsPerMale = 0.0;
+public double avgCoalitionParticipationCost = 0.0;
+public double averageAge = 0.0;
+public int malesWithGene = 0;
+public int malesWithoutGene = 0;
+public int totalBaboons = 0;
+public int juvenileCount = 0;
+public int adultMaleCount = 0;
+public int adultFemaleCount = 0;
+public int coalitionGeneCount = 0;
+public int totalAdults = 0;
+public double avgFightingAbility = 0.0;
+public double coalitionGeneFreq = 0.0;
+public double avgDominanceRank = 0.0;
+public double avgDominanceHierarchySize = 0.0;
+public int maxDominanceRank = 0;
+public int maxGroupSizeObserved = 0;
+public long summaryStep = 0;
+public int coalitionMaleDeaths = 0;
+public int nonCoalitionMaleDeaths = 0;
+public double coalitionMaleLifetimeOffspringSum = 0.0;
+public double nonCoalitionMaleLifetimeOffspringSum = 0.0;
+public double coalitionPrimeOffspringSum = 0.0;
+public double coalitionPostPrimeOffspringSum = 0.0;
+public double coalitionSenescentOffspringSum = 0.0;
+public double nonCoalitionPrimeOffspringSum = 0.0;
+public double nonCoalitionPostPrimeOffspringSum = 0.0;
+public double nonCoalitionSenescentOffspringSum = 0.0;
+public double coalitionMaleLifespanSum = 0.0;
+public double nonCoalitionMaleLifespanSum = 0.0;
+public double meanLifetimeOffspringCoalitionMales = 0.0;
+public double meanLifetimeOffspringNonCoalitionMales = 0.0;
+public double avgOffspringPrimeCoalitionMales = 0.0;
+public double avgOffspringPostPrimeCoalitionMales = 0.0;
+public double avgOffspringSenescentCoalitionMales = 0.0;
+public double avgOffspringPrimeNonCoalitionMales = 0.0;
+public double avgOffspringPostPrimeNonCoalitionMales = 0.0;
+public double avgOffspringSenescentNonCoalitionMales = 0.0;
+public double avgLifespanCoalitionMales = 0.0;
+public double avgLifespanNonCoalitionMales = 0.0;
+public int livingCoalitionMales = 0;
+public int livingNonCoalitionMales = 0;
+public double avgDominanceRankCoalitionMales = 0.0;
+public double avgDominanceRankNonCoalitionMales = 0.0;
+public double avgFightingAbilityCoalitionMales = 0.0;
+public double avgFightingAbilityNonCoalitionMales = 0.0;
+public String nameSpace = "SPARSE";
+public int gridWidth = 100;
+public int gridHeight = 100;
+public boolean paramSweeps = true;
+public long simLength = 1001;
+public int simNumber = 10;
+public String fileDataName = "results.txt";
+public String folderDataName = "data";
+public int dataSamplingInterval = 1;
+public int burnIn = 0;
+public double scheduleTimeInterval = 1.0;
+public boolean closeProgramAtend = true;
+public boolean customSweepOnly = false;

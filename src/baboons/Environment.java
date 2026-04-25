@@ -26,6 +26,9 @@ public class Environment extends SimStateSweep implements Steppable
 		SNEAKER
 	}
 	
+	//switch for one challenge per timestep
+	public boolean oneChallengePerTimestep = true;
+	
 	//population variables
 	public int n =10000; //number of baboons at simulation start
 	public int groups = 175; //number of groups at simulation start
